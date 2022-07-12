@@ -158,20 +158,6 @@ static const uint8_t khashv_xored[256] = {
 
 /* Scalar Code */
 
-static KHASH_FINLINE void khashv_mix_words_scalar(khashvBlock* in) {
-    unsigned rots[4] = {5, 7, 11, 17};
-    uint32_t tmp[4];
-    for (int i = 0; i < 4; i++) {
-        unsigned rot = rots[i];
-        for (int j = 0; j < 4; j++) {
-            uint32_t x = in->words[j];
-            uint32_t y = in->words[(j + 1) & 0x3];
-            tmp[j] = x ^ KHASH_ROTR32(x + y, rot);
-        }
-        memcpy(in, tmp, 16);
-    }
-}
-
 static KHASH_FINLINE void khashv_bswap_be_block_scalar(khashvBlock* in) {
     // Byte swapping is only needed if we are not on on a little endian system
     if (khashv_is_little_endian()) {
@@ -283,6 +269,21 @@ static KHASH_OPT_SZ void khashv_replace_scalar(khashvBlock* replace) {
     memcpy(replace->words, tmp.bytes, 16);
 }
 
+static KHASH_FINLINE void khashv_mix_words_scalar(khashvBlock* in) {
+    unsigned rots[4] = { 5, 7, 11, 17 };
+    khashvBlock tmp  = { 0 };
+    for (int i = 0; i < 4; i++) {
+        unsigned rot = rots[i];
+        tmp = *in;
+        khashv_rotr_5_bytes_scalar(&tmp);
+        khashv_add_block_scalar(&tmp, in);
+        for (int j = 0; j < 4; j++) {
+            tmp.words[j] = KHASH_ROTR32(tmp.words[j], rot);
+        }
+        khashv_xor_block_scalar(in, &tmp);
+    }
+}
+
 static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t data_len) {
     hash->words[0] ^= data_len;
     // size_t is bigger than 32 bits
@@ -391,7 +392,7 @@ static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
     __m128i tmp1;
     __m128i tmp2;
 
-    tmp1 = _mm_shuffle_epi32(val, 0x39);
+    tmp1 = _mm_alignr_epi8(val, val, 5);
     tmp1 = _mm_add_epi32(val, tmp1);
     #if defined(__AVX512VL__)
         tmp1 = _mm_ror_epi32(tmp1, 5);
@@ -403,7 +404,7 @@ static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
         val  = _mm_xor_si128(val, tmp1);
     #endif
 
-    tmp1 = _mm_shuffle_epi32(val, 0x39);
+    tmp1 = _mm_alignr_epi8(val, val, 5);
     tmp1 = _mm_add_epi32(val, tmp1);
     #if defined(__AVX512VL__)
         tmp1 = _mm_ror_epi32(tmp1, 7);
@@ -415,7 +416,7 @@ static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
         val  = _mm_xor_si128(val, tmp1);
     #endif
 
-    tmp1 = _mm_shuffle_epi32(val, 0x39);
+    tmp1 = _mm_alignr_epi8(val, val, 5);
     tmp1 = _mm_add_epi32(tmp1, val);
     #if defined(__AVX512VL__)
         tmp1 = _mm_ror_epi32(tmp1, 11);
@@ -427,7 +428,7 @@ static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
         val  = _mm_xor_si128(val, tmp1);
     #endif
 
-    tmp1 = _mm_shuffle_epi32(val, 0x39);
+    tmp1 = _mm_alignr_epi8(val, val, 5);
     tmp1 = _mm_add_epi32(tmp1, val);
     #if defined(__AVX512VL__)
         tmp1 = _mm_ror_epi32(tmp1, 17);
@@ -645,7 +646,6 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
         tmp_2 = _mm_xor_si128  (hash,  tmp_2);
         tmp_2 = _mm_alignr_epi8(tmp_2, tmp_2, 5);
         hash  = _mm_add_epi32  (tmp_2, tmp_1);
-        print_bytes(&hash);
 
         tmp_2 = _mm_srli_epi32(hash, 3);
         tmp_1 = _mm_shuffle_epi8(hash, shuff);
