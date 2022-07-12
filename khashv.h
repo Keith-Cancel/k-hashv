@@ -1,3 +1,23 @@
+/*
+MIT License
+Copyright (c) 2022 Keith-Cancel
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #ifndef K_HASH_V_H
 #define K_HASH_V_H
 #ifdef __cplusplus
@@ -370,7 +390,7 @@ static void khashv_prep_seed128_scalar(khashvSeed* seed_prepped, const uint32_t 
 static uint32_t khashv32_scalar(khashvSeed* seed, const uint8_t* data, size_t data_len) {
     khashvBlock h = *seed;
     khashv_hash_scalar(&h, data, data_len);
-    return h.words[0];
+    return h.words[3];
 }
 
 static uint64_t khashv64_scalar(khashvSeed* seed, const uint8_t* data, size_t data_len) {
@@ -676,7 +696,15 @@ static void khashv_prep_seed128_vector(khashvSeed* seed_prepped, const uint32_t 
 
 static uint32_t khashv32_vector(khashvSeed* seed, const uint8_t* data, size_t data_len) {
     __m128i h = khashv_hash_vector(seed->vec, data, data_len);
-    return _mm_cvtsi128_si32(h);
+    // using word[3] to avoid any overlap with with the
+    // 64 bit hash which uses words [0] and [1], this ensures
+    // the 2 bit outputs should behave differently when used.
+    #if defined(__SSE4_1__)
+        return _mm_extract_epi32(h, 3);
+    #else
+        h = _mm_shuffle_epi32(h, 0xff);
+        return _mm_cvtsi128_si32(h);
+    #endif
 }
 
 static uint64_t khashv64_vector(khashvSeed* seed, const uint8_t* data, size_t data_len) {
