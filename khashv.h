@@ -879,9 +879,8 @@ static uint64_t khashv64_vector(khashvSeed* seed, const uint8_t* data, size_t da
     kv4ui h;
     memcpy(&h, seed, 16);
     h = khashv_hash_gcc(h, data, data_len);
-    uint64_t ret = h[1];
-    ret <<= 32;
-    ret  |= h[0];
+    uint64_t ret;
+    memcpy(&ret, &h, 8);
     return ret;
 }
 
