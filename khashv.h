@@ -30,8 +30,17 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 
+// For MSVC compiler, no __SSE3__ macro
+#if !defined(__SSE3__) && (defined(__AVX__) || defined(__AVX2__))
+    #define __SSE3__
+#endif
+// Same deal
+#if !defined(__SSE4_1__) && (defined(__AVX__) || defined(__AVX2__))
+    #define __SSE4_1__
+#endif
+
 #if defined(__SSE3__)
-#include <immintrin.h>
+    #include <immintrin.h>
 #endif
 
 #if defined(__GNUC__) && !defined(__clang__)
@@ -82,7 +91,7 @@ extern "C" {
 #endif
 
 #if !defined(KHASH_BSWAP32)
-    #define KHASH_BSWAP32(val)                                                   ((val >> 24) | ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000) |         (val << 24))
+    #define KHASH_BSWAP32(val) ((val >> 24) | ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000) |  (val << 24))
 #endif
 
 static KHASH_FINLINE int khashv_is_little_endian() {
