@@ -732,7 +732,7 @@ static uint64_t khashv64_vector(khashvSeed* seed, const uint8_t* data, size_t da
 
 /* Vectorization via GCCs Vectorization builtins */
 
-#if !defined(KHASH_VECTOR) && KHASH_GCC_LEAST__(6, 1)
+#if !defined(KHASH_VECTOR) && KHASH_GCC_LEAST__(6, 1) && defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN
 
 #define KHASH_VECTOR 1
 
