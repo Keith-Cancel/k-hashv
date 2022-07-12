@@ -159,7 +159,7 @@ static const uint8_t khashv_xored[256] = {
 /* Scalar Code */
 
 static KHASH_FINLINE void khashv_mix_words_scalar(khashvBlock* in) {
-    unsigned rots[4] = {5, 7, 11, 13};
+    unsigned rots[4] = {5, 7, 11, 17};
     uint32_t tmp[4];
     for (int i = 0; i < 4; i++) {
         unsigned rot = rots[i];
@@ -621,7 +621,7 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
         tmp_2 = _mm_add_epi32  (tmp_1, tmp_2);
         tmp_2 = _mm_xor_si128  (hash,  tmp_2);
         tmp_2 = _mm_alignr_epi8(tmp_2, tmp_2, 5);
-        hash  = _mm_xor_si128  (tmp_2, tmp_1);
+        hash  = _mm_add_epi32  (tmp_2, tmp_1);
 
         tmp_2 = _mm_srli_epi32(hash, 3);
         tmp_1 = _mm_shuffle_epi8(hash, shuff);
@@ -644,7 +644,7 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
         tmp_2 = _mm_add_epi32  (tmp_1, tmp_2);
         tmp_2 = _mm_xor_si128  (hash,  tmp_2);
         tmp_2 = _mm_alignr_epi8(tmp_2, tmp_2, 5);
-        hash  = _mm_xor_si128  (tmp_2, tmp_1);
+        hash  = _mm_add_epi32  (tmp_2, tmp_1);
 
         tmp_2 = _mm_srli_epi32(hash, 3);
         tmp_1 = _mm_shuffle_epi8(hash, shuff);
