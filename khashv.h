@@ -308,7 +308,7 @@ static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t da
         khashv_add_block_scalar(&tmp_2, &tmp_1);
         khashv_xor_block_scalar(&tmp_h, &tmp_2);
         khashv_rotr_5_bytes_scalar(&tmp_h);
-        khashv_xor_block_scalar(&tmp_h, &tmp_1);
+        khashv_add_block_scalar(&tmp_h, &tmp_1);
 
         tmp_2 = tmp_h;
         khashv_shr_3_block_scalar(&tmp_2);
@@ -333,7 +333,7 @@ static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t da
         khashv_add_block_scalar(&tmp_2, &tmp_1);
         khashv_xor_block_scalar(&tmp_h, &tmp_2);
         khashv_rotr_5_bytes_scalar(&tmp_h);
-        khashv_xor_block_scalar(&tmp_h, &tmp_1);
+        khashv_add_block_scalar(&tmp_h, &tmp_1);
 
         tmp_2 = tmp_h;
         khashv_shr_3_block_scalar(&tmp_2);
@@ -430,11 +430,11 @@ static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
     tmp1 = _mm_shuffle_epi32(val, 0x39);
     tmp1 = _mm_add_epi32(tmp1, val);
     #if defined(__AVX512VL__)
-        tmp1 = _mm_ror_epi32(tmp1, 13);
+        tmp1 = _mm_ror_epi32(tmp1, 17);
         val  = _mm_xor_si128(val, tmp1);
     #else
-        tmp2 = _mm_srli_epi32(tmp1, 13);
-        tmp1 = _mm_slli_epi32(tmp1, 19);
+        tmp2 = _mm_srli_epi32(tmp1, 17);
+        tmp1 = _mm_slli_epi32(tmp1, 15);
         val  = _mm_xor_si128(val, tmp2);
         val  = _mm_xor_si128(val, tmp1);
     #endif
@@ -645,6 +645,7 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
         tmp_2 = _mm_xor_si128  (hash,  tmp_2);
         tmp_2 = _mm_alignr_epi8(tmp_2, tmp_2, 5);
         hash  = _mm_add_epi32  (tmp_2, tmp_1);
+        print_bytes(&hash);
 
         tmp_2 = _mm_srli_epi32(hash, 3);
         tmp_1 = _mm_shuffle_epi8(hash, shuff);
