@@ -334,8 +334,11 @@ static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t da
         khashv_bswap_be_block_scalar(&tmp_1);
 
         tmp_2 = tmp_1;
-        khashv_shl_13_block_scalar(&tmp_2);
-        khashv_add_block_scalar(&tmp_2, &tmp_1);
+        //khashv_shl_13_block_scalar(&tmp_2);
+        //khashv_add_block_scalar(&tmp_2, &tmp_1);
+        for(int i = 0; i < 4; i++) {
+            tmp_2.words[i] *= 8193;
+        }
         khashv_xor_block_scalar(&tmp_h, &tmp_2);
         khashv_rotr_5_bytes_scalar(&tmp_h);
         khashv_add_block_scalar(&tmp_h, &tmp_1);
@@ -359,8 +362,11 @@ static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t da
         khashv_bswap_be_block_scalar(&tmp_1);
 
         tmp_2 = tmp_1;
-        khashv_shl_13_block_scalar(&tmp_2);
-        khashv_add_block_scalar(&tmp_2, &tmp_1);
+        //khashv_shl_13_block_scalar(&tmp_2);
+        //khashv_add_block_scalar(&tmp_2, &tmp_1);
+        for(int i = 0; i < 4; i++) {
+            tmp_2.words[i] *= 8193;
+        }
         khashv_xor_block_scalar(&tmp_h, &tmp_2);
         khashv_rotr_5_bytes_scalar(&tmp_h);
         khashv_add_block_scalar(&tmp_h, &tmp_1);
@@ -625,7 +631,8 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
     const __m128i s1     = _mm_loadu_si128((const __m128i*)khashv_s1);
     const __m128i s2     = _mm_loadu_si128((const __m128i*)khashv_s2);
     const __m128i shuff  = _mm_loadu_si128((const __m128i*)khashv_shuff);
-    __m128i       mask   = _mm_set1_epi32(0x0f0f0f0f);
+    const __m128i mask   = _mm_set1_epi32(0x0f0f0f0f);
+
     __m128i       tmp_1;
     __m128i       tmp_2;
 
