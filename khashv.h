@@ -702,7 +702,7 @@ static void khashv_prep_seed64_vector(khashvSeed* seed_prepped, uint64_t seed) {
     __m128i t = _mm_cvtsi32_si128(seed >> 32);
     s = _mm_xor_si128(s, _mm_cvtsi32_si128(seed));
     s = khashv_mix_words_vector(s);
-    _mm_xor_si128(s, _mm_shuffle_epi32(t, 0xf3));
+    s = _mm_xor_si128(s, _mm_shuffle_epi32(t, 0xf3));
     seed_prepped->vec = khashv_mix_words_vector(s);
 }
 
