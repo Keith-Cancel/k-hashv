@@ -402,13 +402,13 @@ static void khashv_prep_seed128_scalar(khashvSeed* seed_prepped, const uint32_t 
     }
 }
 
-static uint32_t khashv32_scalar(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static uint32_t khashv32_scalar(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     khashvBlock h = *seed;
     khashv_hash_scalar(&h, data, data_len);
     return h.words[3];
 }
 
-static uint64_t khashv64_scalar(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static uint64_t khashv64_scalar(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     khashvBlock h = *seed;
     khashv_hash_scalar(&h, data, data_len);
     uint64_t r = h.words[1];
@@ -710,7 +710,7 @@ static void khashv_prep_seed128_vector(khashvSeed* seed_prepped, const uint32_t 
     seed_prepped->vec = _mm_loadu_si128((const __m128i*)seed);
 }
 
-static uint32_t khashv32_vector(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     __m128i h = khashv_hash_vector(seed->vec, data, data_len);
     // using word[3] to avoid any overlap with with the
     // 64 bit hash which uses words [0] and [1], this ensures
@@ -723,7 +723,7 @@ static uint32_t khashv32_vector(khashvSeed* seed, const uint8_t* data, size_t da
     #endif
 }
 
-static uint64_t khashv64_vector(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     __m128i h = khashv_hash_vector(seed->vec, data, data_len);
     return _mm_cvtsi128_si64(h);
 }
@@ -868,14 +868,14 @@ static void khashv_prep_seed128_vector(khashvSeed* seed_prepped, const uint32_t 
     memcpy(seed_prepped->words, seed, 16);
 }
 
-static uint32_t khashv32_vector(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     kv4ui h;
     memcpy(&h, seed, 16);
     h = khashv_hash_gcc(h, data, data_len);
     return h[3];
 }
 
-static uint64_t khashv64_vector(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     kv4ui h;
     memcpy(&h, seed, 16);
     h = khashv_hash_gcc(h, data, data_len);
@@ -900,11 +900,11 @@ static uint64_t khashv64_vector(khashvSeed* seed, const uint8_t* data, size_t da
         khashv_prep_seed128_vector(seed_prepped, seed);
     }
 
-    static uint32_t khashv32(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static uint32_t khashv32(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv32_vector(seed, data, data_len);
     }
 
-    static uint64_t khashv64(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static uint64_t khashv64(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv64_vector(seed, data, data_len);
     }
 
@@ -922,11 +922,11 @@ static uint64_t khashv64_vector(khashvSeed* seed, const uint8_t* data, size_t da
         khashv_prep_seed128_scalar(seed_prepped, seed);
     }
 
-    static uint32_t khashv32(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static uint32_t khashv32(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv32_scalar(seed, data, data_len);
     }
 
-    static uint64_t khashv64(khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static uint64_t khashv64(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv64_scalar(seed, data, data_len);
     }
 
