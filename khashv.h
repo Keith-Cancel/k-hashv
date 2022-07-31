@@ -52,6 +52,10 @@ extern "C" {
 #define KHASH_GCC_LEAST__(maj, min) 0
 #endif
 
+#if (defined(__MINGW32__) || defined(__MINGW64__)) && !defined(__clang__)
+#define KHASH_IS_MINGW__ 1
+#endif
+
 #if defined(__clang__) && defined(__has_attribute)
 #define KHASH_CHK_ATTRIBUTE__(attr) __has_attribute(attr)
 #elif defined(__has_attribute) && KHASH_GCC_LEAST__(5, 0)
@@ -757,7 +761,7 @@ static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, siz
 // Handy since it allows vectorization without explicit intrinsics
 // for a particular CPU.
 
-#if !defined(KHASH_VECTOR) && KHASH_GCC_LEAST__(6, 1) && defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN
+#if !defined(KHASH_VECTOR) && (KHASH_GCC_LEAST__(6, 1) || defined(KHASH_IS_MINGW__)) && defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN
 
 #define KHASH_VECTOR 1
 
