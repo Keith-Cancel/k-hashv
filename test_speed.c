@@ -1,40 +1,47 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <time.h>
 #include <float.h>
-
 #include "khashv.h"
 
+#if defined(__MINGW32__) || defined(_WIN32)
+    #include <windows.h>
+
+    #define get_timer(x) QueryPerformanceCounter(&x)
+
+    typedef LARGE_INTEGER timer;
+
+    uint64_t time_ns(timer* start, timer* stop) {
+        LARGE_INTEGER freq;
+        if(!QueryPerformanceFrequency(&freq)) {
+            return UINT64_MAX;
+        }
+        double ns    = stop->QuadPart - start->QuadPart;
+        double ratio = 1000000000.0; // 1 billion ns = 1 second
+        ratio /=  (double)freq.QuadPart;
+        ns *= ratio;
+        return (uint64_t)ns;
+    }
+
+#else
+    #include <time.h>
+    #define get_timer(x) clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &x)
+    typedef struct timespec timer;
+
+    uint64_t time_ns(timer* start, timer* stop) {
+        int secs = stop->tv_sec - start->tv_sec;
+        if(secs > 0) {
+            uint64_t t0_ns = start->tv_sec * 1000000000;
+            uint64_t t1_ns = stop->tv_sec  * 1000000000;
+            t0_ns += start->tv_nsec;
+            t1_ns += stop->tv_nsec;
+            return t1_ns - t0_ns;
+        }
+        return stop->tv_nsec - start->tv_nsec;
+    }
+#endif
 
 #define MB_TO_BYTES(x) (1024ULL * 1024ULL * (x))
-
-typedef struct timespec timer;
-
-typedef struct test_32_s {
-    uint8_t*   data;
-    size_t     dlen;
-    uint32_t   hash;
-} test32;
-
-typedef struct test_run_s {
-    double    avg_ns;
-    double    fastest_ns;
-    test32*   tests;
-    unsigned  test_cnt;
-} testRun;
-
-uint64_t time_ns(timer* start, timer* stop) {
-    int secs = stop->tv_sec - start->tv_sec;
-    if(secs > 0) {
-        uint64_t t0_ns = start->tv_sec * 1000000000;
-        uint64_t t1_ns = stop->tv_sec  * 1000000000;
-        t0_ns += start->tv_nsec;
-        t1_ns += stop->tv_nsec;
-        return t1_ns - t0_ns;
-    }
-    return stop->tv_nsec - start->tv_nsec;
-}
 
 double get_gbs(double t_ns, double gigs) {
     t_ns /= 1000000000;
@@ -88,9 +95,9 @@ int gig_tests(khashvSeed seed) {
     for(unsigned i = 0; i < 12; i++) {
         timer t0;
         timer t1;
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
+        get_timer(t0);
         uint32_t h = khashv32(&seed, bytes, size);
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
+        get_timer(t1);
 
         if(h != hashes[i]) {
             printf("Bad Hash: 0x%08x, expected: 0x%08x !!!\n", h, hashes[i]);
@@ -157,9 +164,9 @@ int half_mb_tests(khashvSeed seed) {
     for(unsigned i = 0; i < count; i++) {
         timer t0;
         timer t1;
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t0);
+        get_timer(t0);
         uint32_t h = khashv32(&seed, bytes, size);
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
+        get_timer(t1);
 
         if(h != hashes[i]) {
             printf("Bad Hash: 0x%08x, expected: 0x%08x !!!\n", h, hashes[i]);
@@ -185,7 +192,7 @@ int half_mb_tests(khashvSeed seed) {
     return 0;
 }
 
-int main() {
+int main(int argc, char** argv) {
     khashvSeed seed;
     khashv_prep_seed64(&seed, 0xa9c163c960d480fb);
 

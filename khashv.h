@@ -41,6 +41,9 @@ extern "C" {
 
 #if defined(__SSE3__)
     #include <immintrin.h>
+    #if defined(__MINGW32__) || defined(_WIN32)
+        #include <emmintrin.h>
+    #endif
 #endif
 
 #if defined(__GNUC__) && !defined(__clang__)
@@ -281,7 +284,8 @@ static KHASH_FINLINE void khashv_replace_scalar(khashvBlock* replace) {
         replace->bytes[i] ^= tmp.bytes[i];
     }
 }*/
-
+// Similar issue as the commented out code so stop the optimizers
+// from getting crazy
 static KHASH_OPT_SZ void khashv_replace_scalar(khashvBlock* replace) {
     khashvBlock tmp;
     memcpy(tmp.bytes, replace->words, 16);
@@ -422,6 +426,19 @@ static uint64_t khashv64_scalar(const khashvSeed* seed, const uint8_t* data, siz
 #if defined(__SSE3__)
 
 #define KHASH_VECTOR 1
+
+#if !defined(_MSC_VER) && !defined(__clang__) && !(KHASH_GCC_LEAST__(11, 0))
+    static KHASH_FINLINE __m128i _mm_loadu_si32(const void* data) {
+        uint32_t val;
+        memcpy(&val, data, sizeof(uint32_t));
+        return _mm_cvtsi32_si128(val);
+    }
+    static KHASH_FINLINE __m128i _mm_loadu_si16(const void* data) {
+        uint32_t val = 0;
+        memcpy(&val, data, sizeof(uint16_t));
+        return _mm_cvtsi32_si128(val);
+    }
+#endif
 
 static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
     __m128i tmp1;
@@ -708,6 +725,8 @@ static void khashv_prep_seed128_vector(khashvSeed* seed_prepped, const uint32_t 
     seed_prepped->vec = _mm_loadu_si128((const __m128i*)seed);
 }
 
+uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len);
+/*
 static uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     __m128i h = khashv_hash_vector(seed->vec, data, data_len);
     // using word[3] to avoid any overlap with with the
@@ -719,7 +738,7 @@ static uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, siz
         h = _mm_shuffle_epi32(h, 0xff);
         return _mm_cvtsi128_si32(h);
     #endif
-}
+}*/
 
 static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     __m128i h = khashv_hash_vector(seed->vec, data, data_len);
