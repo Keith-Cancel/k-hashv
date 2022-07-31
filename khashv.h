@@ -725,8 +725,6 @@ static void khashv_prep_seed128_vector(khashvSeed* seed_prepped, const uint32_t 
     seed_prepped->vec = _mm_loadu_si128((const __m128i*)seed);
 }
 
-uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len);
-/*
 static uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     __m128i h = khashv_hash_vector(seed->vec, data, data_len);
     // using word[3] to avoid any overlap with with the
@@ -738,7 +736,7 @@ static uint32_t khashv32_vector(const khashvSeed* seed, const uint8_t* data, siz
         h = _mm_shuffle_epi32(h, 0xff);
         return _mm_cvtsi128_si32(h);
     #endif
-}*/
+}
 
 static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     __m128i h = khashv_hash_vector(seed->vec, data, data_len);
