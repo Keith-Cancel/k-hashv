@@ -1,5 +1,5 @@
 # K-HASHV
-A single header hash function with both vectorized and scalar versions. The function is quite fast when vectorized achieving approximately an average of ~9.6 GB/s on a 7 year old Xeon E3-1230 v5.
+A single header hash function with both vectorized and scalar versions. The function is quite fast when vectorized achieving approximately an average of **~9.6 GB/s** on a 7 year old Xeon E3-1230 v5.
 
 Moreover, it is quite easy to choose a new function at runtime by just using new seed as shown below:
 ```C
@@ -35,6 +35,32 @@ The scalar version is slower at a tad over ~1 GB/s on my system when compiling t
 On windows Microsoft's compiler does not seem to generate as performant code from the intrinsics, but the GCC mingw64 compiler generates pretty comparable numbers for me at least.
 
 Definitely, want to add other machines to this table. But if you are curious how it performs on your machine compile test_speed.c with `-O3 -march=native` and `-O3 -march=native -D KHASHV_SCALAR`.
+
+## Functions
+```C
+// Prepares a seed from a 32-bit value
+void khashv_prep_seed32(khashvSeed* seed_prepped, uint32_t seed)
+```
+
+```C
+// Prepares a seed from a 64-bit value
+void khashv_prep_seed64(khashvSeed* seed_prepped, uint64_t seed)
+```
+
+```C
+// Sets  128-bits to be the seed
+void khashv_prep_seed128(khashvSeed* seed_prepped, const uint32_t seed[4])
+```
+
+```C
+// Produces a 32-bit hash from the input data
+uint32_t khashv32(const khashvSeed* seed, const uint8_t* data, size_t data_len)
+```
+
+```C
+// Produces a 64-bit hash from the input data
+uint64_t khashv64(const khashvSeed* seed, const uint8_t* data, size_t data_len)
+```
 
 ## K-HASHV 64 Output
 Here is the output of the 64 bit hash of the integers \[0, 259199\] using 0x1dcedff1a8b17e89 as the seed.
