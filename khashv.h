@@ -440,6 +440,14 @@ static uint64_t khashv64_scalar(const khashvSeed* seed, const uint8_t* data, siz
     }
 #endif
 
+#if !defined(_MSC_VER) && !defined(__clang__) && !(KHASH_GCC_LEAST__(9, 1))
+    static KHASH_FINLINE __m128i _mm_loadu_si64(const void* data) {
+        uint64_t val = 0;
+        memcpy(&val, data, sizeof(uint64_t));
+        return _mm_cvtsi32_si128(val);
+    }
+#endif
+
 static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
     __m128i tmp1;
     __m128i tmp2;
@@ -746,6 +754,8 @@ static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, siz
 #endif
 
 /* Vectorization via GCCs Vectorization builtins */
+// Handy since it allows vectorization without explicit intrinsics
+// for a particular CPU.
 
 #if !defined(KHASH_VECTOR) && KHASH_GCC_LEAST__(6, 1) && defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN
 
