@@ -911,7 +911,7 @@ static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, siz
 
 #endif
 
-#if defined(KHASH_VECTOR)
+#if defined(KHASH_VECTOR) && !defined(KHASHV_SCALAR)
 
     static void khashv_prep_seed32(khashvSeed* seed_prepped, uint32_t seed) {
         khashv_prep_seed32_vector(seed_prepped, seed);
