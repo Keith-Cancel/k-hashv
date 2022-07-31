@@ -56,6 +56,15 @@ extern "C" {
 #define __BYTE_ORDER __BYTE_ORDER__
 #endif
 
+#if defined(__ORDER_LITTLE_ENDIAN__) && !defined(__LITTLE_ENDIAN)
+#define __LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#endif
+
+#if defined(__ORDER_BIG_ENDIAN__) && !defined(__BIG_ENDIAN)
+#define __BIG_ENDIAN __ORDER_BIG_ENDIAN__
+#endif
+
+
 #if defined(__clang__) && defined(__has_attribute)
 #define KHASH_CHK_ATTRIBUTE__(attr) __has_attribute(attr)
 #elif defined(__has_attribute) && KHASH_GCC_LEAST__(5, 0)
