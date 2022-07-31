@@ -61,7 +61,7 @@ for(int i = 0; i < sizeof(hash_bytes); i++) {
 ## Things TODO
 When thinking about things to improve the code and hash function these are the first few things that come to mind for me.
 
-1. The main thing would be try to get both Clang and MSVC to output code that runs as fast GCC or as close as possible. They both seem to do some silly things when compared to GCC losing some performance when looking at the generated assembly.
+1. The main thing would be try to get both Clang and MSVC to output code that runs as fast GCC or as close as possible. They both seem to do some silly things when compared to GCC losing some performance when looking at the generated assembly. Microsoft's compiler being the worst, and probably the fastest fix for me to implement would be to write some assembly code. However, it then would no longer be a single header file hash function since MSVC does not support inline assembly for 64-bit builds, and thusly would require a separate file.
 
 2. Then probably consider using intrinsics for some other systems like ARM NEON, but the for now there is scalar code and code written using GCC's vector built-ins that will generate vectorized code for other architectures that GCC supports.
 
