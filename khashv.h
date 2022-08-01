@@ -634,27 +634,16 @@ static KHASH_FINLINE __m128i khashv_part_load_vector(const uint8_t* data, size_t
                 tmp  = _mm_or_si128(tmp, tmp2);
             #endif
             break;
+        case 16:
+            tmp  = _mm_loadu_si64(data);
+            #if defined(__SSE4_1__)
+                tmp = _mm_insert_epi64(tmp, *(uint64_t*)(data + 8), 1);
+            #else
+                tmp2 = _mm_loadu_si64(data + 8);
+                tmp  = _mm_unpacklo_epi64(tmp, tmp2);
+            #endif
+            break;
     }
-    /*uint8_t* vptr = (uint8_t*)&tmp;
-    unsigned off  = 0;
-    if(len & 0x8) {
-        uint64_t t8;
-        memcpy(&t8, data, 8);
-        tmp = _mm_cvtsi64_si128(t8);
-        off += 8;
-    }
-    if(len & 0x4) {
-        memcpy(vptr + off, data + off, 4);
-        off += 4;
-    }
-    if(len & 0x2) {
-        memcpy(vptr + off, data + off, 2);
-        off += 2;
-    }
-    if(len & 0x1) {
-        memcpy(vptr + off, data + off, 1);
-    }
-    */
     return tmp;
 }
 
@@ -679,8 +668,9 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
     #endif
     hash = _mm_xor_si128(tmp_1, hash);
 
-    const uint8_t* end = data + (data_len & ~((size_t)15));
-    while(data < end) {
+    const uint8_t* end  = data + (data_len & ~((size_t)15));
+    const uint8_t* end2 = data + data_len;
+    while(data_len > 16 && data < end) {
         tmp_1 = _mm_lddqu_si128((const __m128i*)data);
         tmp_2 = _mm_srli_epi32  (tmp_1, 4);
 
@@ -702,7 +692,7 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
 
         data += 16;
     }
-    unsigned trailing = data_len & 0xf;
+    uintptr_t trailing = end2 - data;
     if(trailing) {
         tmp_1 = khashv_part_load_vector(data, trailing);
         tmp_2 = _mm_srli_epi32  (tmp_1, 4);
