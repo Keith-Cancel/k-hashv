@@ -1,6 +1,8 @@
 # K-HASHV
 A single header hash function with both vectorized and scalar versions. The function is quite fast when vectorized achieving approximately an average of **~9.6 GB/s** on a 7 year old Xeon E3-1230 v5.
 
+It also passes all the SMHasher hash function quality tests: https://github.com/rurban/smhasher
+
 Moreover, it is quite easy to choose a new function at runtime by just using new seed as shown below:
 ```C
 #include "khashv.h"
