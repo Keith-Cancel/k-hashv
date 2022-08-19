@@ -94,3 +94,6 @@ When thinking about things to improve the code and hash function these are the f
 2. Then probably consider using intrinsics for some other systems like ARM NEON, but the for now there is scalar code and code written using GCC's vector built-ins that will generate vectorized code for other architectures that GCC supports.
 
 3. Probably, the next thing I could think of is to choose a better value for S1 and S2 that are used to basically substitute bytes. The current values where found randomly checking a small set of criteria. Mainly focusing on each bit of S1 and S2 as columns. Then Xor-ing them effectively creating an 8 bit input boolean function, and making sure the entire thing maps each input to a unique value. There likely are better values that could chosen, and criteria to look at that look at all bits at once. However, the search space is huge effectively 2^(2\*8\*16) possible permutations for S1 and S2. However, the current values do seem to work well, from my testing.
+
+### Suggestions
+I open to any other suggestions or improvments. 
