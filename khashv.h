@@ -760,7 +760,7 @@ static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, siz
 // Handy since it allows vectorization without explicit intrinsics
 // for a particular CPU.
 
-#if !defined(KHASH_VECTOR) && KHASH_GCC_LEAST__(6, 1) && defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN
+#if !defined(KHASH_VECTOR) && KHASH_GCC_LEAST__(6, 1)
 
 #define KHASH_VECTOR 1
 
@@ -790,26 +790,55 @@ static KHASH_FINLINE kv16ui khashv_sub_s2_gcc(kv16ui in) {
 }
 
 static KHASH_FINLINE kv4ui khashv_rotr_5_bytes_gcc(kv4ui input) {
-    const kv16ui rotr = {
+    const kv16ui rotrLE = {
         0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc,
         0xd, 0xe, 0xf, 0x0, 0x1, 0x2, 0x3, 0x4
     };
+    const kv16ui rotrBE = {
+        0xb, 0x4, 0x5, 0x6, 0xf, 0x8, 0x9, 0xa,
+        0x3, 0xc, 0xd, 0xe, 0x7, 0x0, 0x1, 0x2
+    };
     kv16ui tmp;
     memcpy(&tmp, &input, 16);
-    tmp = __builtin_shuffle(tmp, rotr);
+    if (khashv_is_little_endian()) {
+        tmp = __builtin_shuffle(tmp, rotrLE);
+    } else {
+        tmp = __builtin_shuffle(tmp, rotrBE);
+    }
     memcpy(&input, &tmp, 16);
     return input;
 }
 
 static KHASH_FINLINE kv4ui khashv_rotr_9_bytes_gcc(kv4ui input) {
-    const kv16ui rotr = {
+    const kv16ui rotrLE = {
         0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x0,
         0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
     };
+    const kv16ui rotrBE = {
+        0xf, 0x8, 0x9, 0xa, 0x3, 0xc, 0xd, 0xe,
+        0x7, 0x0, 0x1, 0x2, 0xb, 0x4, 0x5, 0x6,
+    };
     kv16ui tmp;
     memcpy(&tmp, &input, 16);
-    tmp = __builtin_shuffle(tmp, rotr);
+    if (khashv_is_little_endian()) {
+        tmp = __builtin_shuffle(tmp, rotrLE);
+    } else {
+        tmp = __builtin_shuffle(tmp, rotrBE);
+    }
     memcpy(&input, &tmp, 16);
+    return input;
+}
+
+static KHASH_FINLINE kv4ui khash_byteswap_vec32_gcc( kv4ui input ) {
+    const kv16ui bswap32 = {
+        0x3, 0x2, 0x1, 0x0, 0x7, 0x6, 0x5, 0x4,
+        0xb, 0xa, 0x9, 0x8, 0xf, 0xe, 0xd, 0xc,
+    };
+    kv16ui b;
+
+    memcpy(&b, &input, 16);
+    b = __builtin_shuffle(b, bswap32);
+    memcpy(&input, &b, 16);
     return input;
 }
 
@@ -839,6 +868,9 @@ static KHASH_FINLINE kv4ui khashv_mix_words_gcc(kv4ui val) {
 
 static KHASH_FINLINE kv4ui khashv_hash_block_gcc(kv4ui hash, kv4ui input) {
     kv4ui tmp_1 = khashv_replace_gcc(input);
+    if (!khashv_is_little_endian()) {
+        tmp_1 = khash_byteswap_vec32_gcc(tmp_1);
+    }
     kv4ui tmp_2 = tmp_1 * 8193;
     tmp_2 ^= hash;
     tmp_2  = khashv_rotr_5_bytes_gcc(tmp_2);
@@ -908,7 +940,12 @@ static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, siz
     memcpy(&h, seed, 16);
     h = khashv_hash_gcc(h, data, data_len);
     uint64_t ret;
-    memcpy(&ret, &h, 8);
+    if (khashv_is_little_endian()) {
+        memcpy(&ret, &h, 8);
+    } else {
+        ret = h[1];
+        ret = (ret << 32) | h[0];
+    }
     return ret;
 }
 
