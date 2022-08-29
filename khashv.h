@@ -457,7 +457,7 @@ static uint64_t khashv64_scalar(const khashvSeed* seed, const uint8_t* data, siz
     static KHASH_FINLINE __m128i _mm_loadu_si64(const void* data) {
         uint64_t val = 0;
         memcpy(&val, data, sizeof(uint64_t));
-        return _mm_cvtsi32_si128(val);
+        return _mm_cvtsi64_si128(val);
     }
 #endif
 
