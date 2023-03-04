@@ -30,6 +30,8 @@ When testing on 1.25 GB and 512 KB of random data I get the following on average
 <tr> <td>Xeon E3-1230 v5</td> <td>0.1298 s</td> <td>9.6285 GB/s</td> <td>052.5107 us</td> <td>9.2987 GB/s</td><td>Linux</td><td>GCC 12.1.0</td><td><strong>Vectorized<strong></td></tr>
 <tr> <td>Xeon E3-1230 v5</td> <td>1.1911 s</td> <td>1.0495 GB/s</td> <td>494.1932 us</td> <td>0.9880 GB/s</td><td>Linux</td><td>GCC 12.1.0</td><td><strong>Scalar<strong></td></tr>
 <tr> <td>Xeon E3-1230 v5</td> <td>0.1418 s</td> <td>8.8142 GB/s</td> <td>055.9333 us</td> <td>8.7297 GB/s</td><td>Linux</td><td>Clang 14.0.6</td><td><strong>Vectorized<strong></td></tr>
+<tr> <td>Ryzen 9 7900</td> <td>0.1227 s</td> <td>10.1881 GB/s</td> <td>046.0273 us</td> <td>10.6085 GB/s</td><td>Linux</td><td>GCC 12.2.1</td><td><strong>Vectorized<strong></td></tr>
+<tr> <td>Ryzen 9 7900</td> <td>0.8693 s</td> <td>1.4379 GB/s</td> <td>375.0820 us</td> <td>1.3018 GB/s</td><td>Linux</td><td>GCC 12.2.1</td><td><strong>Scalar<strong></td></tr>
 </tbody>
 </table>
 
