@@ -398,13 +398,13 @@ static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t da
     *hash = tmp_h;
 }
 
-static void khashv_prep_seed32_scalar(khashvSeed* seed_prepped, uint32_t seed) {
+static inline void khashv_prep_seed32_scalar(khashvSeed* seed_prepped, uint32_t seed) {
     *seed_prepped = khash_v_init;
     seed_prepped->words[0] ^= seed;
     khashv_mix_words_scalar(seed_prepped);
 }
 
-static void khashv_prep_seed64_scalar(khashvSeed* seed_prepped, uint64_t seed) {
+static inline void khashv_prep_seed64_scalar(khashvSeed* seed_prepped, uint64_t seed) {
     *seed_prepped = khash_v_init;
     seed_prepped->words[0] ^= seed;
     khashv_mix_words_scalar(seed_prepped);
@@ -413,19 +413,19 @@ static void khashv_prep_seed64_scalar(khashvSeed* seed_prepped, uint64_t seed) {
     khashv_mix_words_scalar(seed_prepped);
 }
 
-static void khashv_prep_seed128_scalar(khashvSeed* seed_prepped, const uint32_t seed[4]) {
+static inline void khashv_prep_seed128_scalar(khashvSeed* seed_prepped, const uint32_t seed[4]) {
     for(int i = 0; i < 4; i++) {
         seed_prepped->words[i] = seed[i];
     }
 }
 
-static uint32_t khashv32_scalar(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static inline uint32_t khashv32_scalar(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     khashvBlock h = *seed;
     khashv_hash_scalar(&h, data, data_len);
     return h.words[3];
 }
 
-static uint64_t khashv64_scalar(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
+static inline uint64_t khashv64_scalar(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
     khashvBlock h = *seed;
     khashv_hash_scalar(&h, data, data_len);
     uint64_t r = h.words[1];
@@ -953,45 +953,45 @@ static uint64_t khashv64_vector(const khashvSeed* seed, const uint8_t* data, siz
 
 #if defined(KHASH_VECTOR) && !defined(KHASHV_SCALAR)
 
-    static void khashv_prep_seed32(khashvSeed* seed_prepped, uint32_t seed) {
+    static inline void khashv_prep_seed32(khashvSeed* seed_prepped, uint32_t seed) {
         khashv_prep_seed32_vector(seed_prepped, seed);
     }
 
-    static void khashv_prep_seed64(khashvSeed* seed_prepped, uint64_t seed) {
+    static inline void khashv_prep_seed64(khashvSeed* seed_prepped, uint64_t seed) {
         khashv_prep_seed64_vector(seed_prepped, seed);
     }
 
-    static void khashv_prep_seed128(khashvSeed* seed_prepped, const uint32_t seed[4]) {
+    static inline void khashv_prep_seed128(khashvSeed* seed_prepped, const uint32_t seed[4]) {
         khashv_prep_seed128_vector(seed_prepped, seed);
     }
 
-    static uint32_t khashv32(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static inline uint32_t khashv32(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv32_vector(seed, data, data_len);
     }
 
-    static uint64_t khashv64(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static inline uint64_t khashv64(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv64_vector(seed, data, data_len);
     }
 
 #else
 
-    static void khashv_prep_seed32(khashvSeed* seed_prepped, uint32_t seed) {
+    static inline void khashv_prep_seed32(khashvSeed* seed_prepped, uint32_t seed) {
         khashv_prep_seed32_scalar(seed_prepped, seed);
     }
 
-    static void khashv_prep_seed64(khashvSeed* seed_prepped, uint64_t seed) {
+    static inline void khashv_prep_seed64(khashvSeed* seed_prepped, uint64_t seed) {
         khashv_prep_seed64_scalar(seed_prepped, seed);
     }
 
-    static void khashv_prep_seed128(khashvSeed* seed_prepped, const uint32_t seed[4]) {
+    static inline void khashv_prep_seed128(khashvSeed* seed_prepped, const uint32_t seed[4]) {
         khashv_prep_seed128_scalar(seed_prepped, seed);
     }
 
-    static uint32_t khashv32(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static inline uint32_t khashv32(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv32_scalar(seed, data, data_len);
     }
 
-    static uint64_t khashv64(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
+    static inline uint64_t khashv64(const khashvSeed* seed, const uint8_t* data, size_t data_len) {
         return khashv64_scalar(seed, data, data_len);
     }
 
