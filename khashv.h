@@ -226,14 +226,18 @@ static KHASH_FINLINE void khashv_rotr_5_bytes_scalar(khashvBlock* in) {
     khashv_bswap_be_block_scalar(in);
 }
 
-static KHASH_FINLINE void khashv_rotr_9_bytes_scalar(khashvBlock* in) {
+static KHASH_FINLINE void khashv_shuffle_bytes_scalar(khashvBlock* in) {
+    static const uint8_t shuffle[16] = {
+        0x7, 0xe, 0x9, 0x0, 0xc, 0xf, 0xd, 0x8,
+        0x5, 0xb, 0x6, 0x3, 0x4, 0x2, 0xa, 0x1
+    };
     khashv_bswap_be_block_scalar(in);
     khashvBlock tmp1;
     khashvBlock tmp2;
     // Avoid aliasing issues by using memcpy between these union values.
     memcpy(tmp1.bytes, in->words, 16);
     for(int i = 0; i < 16; i++) {
-        tmp2.bytes[i] = tmp1.bytes[(i + 9) & 0xf];
+        tmp2.bytes[i] = tmp1.bytes[shuffle[i]];
     }
     memcpy(in->words, tmp2.bytes, 16);
     khashv_bswap_be_block_scalar(in);
@@ -318,6 +322,11 @@ static KHASH_OPT_SZ void khashv_replace_scalar(khashvBlock* replace) {
 static KHASH_FINLINE void khashv_mix_words_scalar(khashvBlock* in) {
     unsigned rots[4] = { 5, 7, 11, 17 };
     khashvBlock tmp  = { 0 };
+
+    tmp = *in;
+    khashv_shr_3_block_scalar(&tmp);
+    khashv_xor_block_scalar(in, &tmp);
+
     for (int i = 0; i < 4; i++) {
         unsigned rot = rots[i];
         tmp = *in;
@@ -360,10 +369,9 @@ static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t da
         khashv_rotr_5_bytes_scalar(&tmp_h);
         khashv_add_block_scalar(&tmp_h, &tmp_1);
 
-        tmp_2 = tmp_h;
-        khashv_shr_3_block_scalar(&tmp_2);
-        khashv_rotr_9_bytes_scalar(&tmp_h);
-        khashv_add_block_scalar(&tmp_h, &tmp_2);
+        tmp_1 = tmp_h;
+        khashv_shuffle_bytes_scalar(&tmp_1);
+        khashv_add_block_scalar(&tmp_h, &tmp_1);
 
         data += 16;
     }
@@ -388,10 +396,9 @@ static void khashv_hash_scalar(khashvBlock* hash, const uint8_t* data, size_t da
         khashv_rotr_5_bytes_scalar(&tmp_h);
         khashv_add_block_scalar(&tmp_h, &tmp_1);
 
-        tmp_2 = tmp_h;
-        khashv_shr_3_block_scalar(&tmp_2);
-        khashv_rotr_9_bytes_scalar(&tmp_h);
-        khashv_add_block_scalar(&tmp_h, &tmp_2);
+        tmp_1 = tmp_h;
+        khashv_shuffle_bytes_scalar(&tmp_1);
+        khashv_add_block_scalar(&tmp_h, &tmp_1);
 
     }
     khashv_mix_words_scalar(&tmp_h);
@@ -465,6 +472,9 @@ static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
     __m128i tmp1;
     __m128i tmp2;
 
+    tmp1 = _mm_srli_epi32(val, 3);
+    val  = _mm_xor_si128(tmp1, val);
+
     tmp1 = _mm_alignr_epi8(val, val, 5);
     tmp1 = _mm_add_epi32(val, tmp1);
     #if defined(__AVX512VL__)
@@ -473,7 +483,7 @@ static KHASH_FINLINE __m128i khashv_mix_words_vector(__m128i val) {
     #else
         tmp2 = _mm_srli_epi32(tmp1, 5);
         tmp1 = _mm_slli_epi32(tmp1, 27);
-        val  = _mm_xor_si128(val, tmp2);
+        tmp1 = _mm_or_si128(tmp1, tmp2);
         val  = _mm_xor_si128(val, tmp1);
     #endif
 
@@ -635,21 +645,15 @@ static KHASH_FINLINE __m128i khashv_part_load_vector(const uint8_t* data, size_t
             #endif
             break;
         case 16:
-            tmp  = _mm_loadu_si64(data);
-            #if defined(__SSE4_1__)
-                tmp = _mm_insert_epi64(tmp, *(uint64_t*)(data + 8), 1);
-            #else
-                tmp2 = _mm_loadu_si64(data + 8);
-                tmp  = _mm_unpacklo_epi64(tmp, tmp2);
-            #endif
+            tmp = _mm_loadu_si128((__m128i*)data);
             break;
     }
     return tmp;
 }
 
 static const uint8_t khashv_shuff[16] = {
-    0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x00,
-    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+    0x7, 0xe, 0x9, 0x0, 0xc, 0xf, 0xd, 0x8,
+    0x5, 0xb, 0x6, 0x3, 0x4, 0x2, 0xa, 0x1
 };
 
 static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data_len) {
@@ -686,9 +690,8 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
         tmp_2 = _mm_alignr_epi8(tmp_2, tmp_2, 5);
         hash  = _mm_add_epi32  (tmp_2, tmp_1);
 
-        tmp_2 = _mm_srli_epi32(hash, 3);
         tmp_1 = _mm_shuffle_epi8(hash, shuff);
-        hash  = _mm_add_epi32 (tmp_2, tmp_1);
+        hash  = _mm_add_epi32(hash, tmp_1);
 
         data += 16;
     }
@@ -709,9 +712,8 @@ static __m128i khashv_hash_vector(__m128i hash, const uint8_t* data, size_t data
         tmp_2 = _mm_alignr_epi8(tmp_2, tmp_2, 5);
         hash  = _mm_add_epi32  (tmp_2, tmp_1);
 
-        tmp_2 = _mm_srli_epi32(hash, 3);
         tmp_1 = _mm_shuffle_epi8(hash, shuff);
-        hash  = _mm_add_epi32 (tmp_2, tmp_1);
+        hash  = _mm_add_epi32(hash, tmp_1);
     }
     hash = khashv_mix_words_vector(hash);
     return hash;
@@ -809,21 +811,21 @@ static KHASH_FINLINE kv4ui khashv_rotr_5_bytes_gcc(kv4ui input) {
     return input;
 }
 
-static KHASH_FINLINE kv4ui khashv_rotr_9_bytes_gcc(kv4ui input) {
-    const kv16ui rotrLE = {
-        0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x0,
-        0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
+static KHASH_FINLINE kv4ui khashv_shuffle_bytes_gcc(kv4ui input) {
+    const kv16ui shuffLE = {
+        0x7, 0xe, 0x9, 0x0, 0xc, 0xf, 0xd, 0x8,
+        0x5, 0xb, 0x6, 0x3, 0x4, 0x2, 0xa, 0x1
     };
-    const kv16ui rotrBE = {
-        0xf, 0x8, 0x9, 0xa, 0x3, 0xc, 0xd, 0xe,
-        0x7, 0x0, 0x1, 0x2, 0xb, 0x4, 0x5, 0x6,
+    const kv16ui shuffBE = {
+        0x3, 0xa, 0xd, 0x4, 0xb, 0xe, 0xc, 0xf,
+        0x0, 0x5, 0x8, 0x6, 0x2, 0x9, 0x1, 0x7,
     };
     kv16ui tmp;
     memcpy(&tmp, &input, 16);
     if (khashv_is_little_endian()) {
-        tmp = __builtin_shuffle(tmp, rotrLE);
+        tmp = __builtin_shuffle(tmp, shuffLE);
     } else {
-        tmp = __builtin_shuffle(tmp, rotrBE);
+        tmp = __builtin_shuffle(tmp, shuffBE);
     }
     memcpy(&input, &tmp, 16);
     return input;
@@ -855,6 +857,8 @@ static KHASH_FINLINE kv4ui khashv_replace_gcc(kv4ui input) {
 
 static KHASH_FINLINE kv4ui khashv_mix_words_gcc(kv4ui val) {
     const unsigned rots[4] = { 5, 7, 11, 17 };
+    kv4ui tmp = val >> 3;
+    val ^= tmp;
     for (int i = 0; i < 4; i++) {
         unsigned rot = rots[i];
         kv4ui tmp = val;
@@ -876,9 +880,8 @@ static KHASH_FINLINE kv4ui khashv_hash_block_gcc(kv4ui hash, kv4ui input) {
     tmp_2  = khashv_rotr_5_bytes_gcc(tmp_2);
     hash   = tmp_1 + tmp_2;
 
-    tmp_2  = hash >> 3;
-    tmp_1  = khashv_rotr_9_bytes_gcc(hash);
-    hash   = tmp_1 + tmp_2;
+    tmp_1  = khashv_shuffle_bytes_gcc(hash);
+    hash   = hash + tmp_1;
     return hash;
 }
 
