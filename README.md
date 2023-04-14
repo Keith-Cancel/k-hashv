@@ -1,7 +1,7 @@
 # K-HASHV 🔨
 A single header hash function with both vectorized and scalar versions. The function is quite fast when vectorized achieving approximately an average of **~10.2 GB/s** on a 7 year old Xeon E3-1230 v5. The header contains explicit intrinsics for x86_64, and also has a version that will use GCC's portable vector built-ins, and the last fall back is a scalar version for portability. The results of the function should be the same regardless of endianness.
 
-Additionally, it also passes all the SMHasher hash function quality tests: https://github.com/rurban/smhasher.
+Additionally, it also passes all the SMHasher hash function quality tests: https://github.com/rurban/smhasher. Additionally, it passes [SMHasher3](https://gitlab.com/fwojcik/smhasher3/-/blob/c56f2bddc1b3e114570d5cbe383ad207673f6c99/results/README.md) a fork of SMHasher with some more stringent tests. Some hashes that pass SMHasher fail in SMHasher3.
 
 Moreover, it is quite easy to choose a new function at runtime by just using new seed as shown below:
 ```C
